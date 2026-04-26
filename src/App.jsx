@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Camera, BarChart2, DollarSign, Target, Star, ChevronDown } from "lucide-react";
+import { PlusCircle, Camera, BarChart2, DollarSign, Target, Star, ChevronDown, KeyRound } from "lucide-react";
 import { T } from "./constants/theme";
 import { INIT } from "./constants/initialData";
 import { today } from "./utils/format";
@@ -14,6 +14,7 @@ import AddWishlistModal from "./modals/AddWishlistModal";
 import AIPlanModal from "./modals/AIPlanModal";
 import BudgetModal from "./modals/BudgetModal";
 import ModelSelector from "./components/ModelSelector";
+import ApiKeyModal from "./modals/ApiKeyModal";
 
 const TABS = [
   { id: "dashboard",    label: "หน้าหลัก", icon: BarChart2 },
@@ -74,6 +75,15 @@ export default function App() {
           <div style={{ fontSize: 11, color: T.muted, marginTop: 1 }}>บัญชีรายรับ-รายจ่าย</div>
         </div>
 
+        {/* API Key Button */}
+        <button
+          onClick={() => setModal("apikey")}
+          style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 10, padding: "7px 8px", cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          title="ตั้งค่า API Key"
+        >
+          <KeyRound size={15} color={localStorage.getItem("finapp_apikey") ? T.accent : T.muted} />
+        </button>
+
         {/* Model Picker Pill */}
         <button
           onClick={() => setModal("model")}
@@ -98,9 +108,25 @@ export default function App() {
         {tab === "wishlist"     && <WishlistTab     data={data} onAdd={() => setModal("wishlist_add")} onDelete={deleteWishlistItem} onAddOffer={addOfferToWishlist} model={model} />}
       </div>
 
-      {/* Bottom Nav */}
-      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(10,10,18,0.75)", backdropFilter: "blur(16px)", borderTop: `1px solid ${T.border}`, display: "flex", zIndex: 100 }}>
-        {TABS.map(t => (
+      {/* Bottom Nav with center FAB */}
+      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(10,10,18,0.75)", backdropFilter: "blur(16px)", borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+        {TABS.slice(0, 2).map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ flex: 1, padding: "12px 4px 16px", border: "none", background: "transparent", color: tab === t.id ? T.accent : T.muted, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "color .2s" }}>
+            <t.icon size={20} />
+            <span style={{ fontSize: 10, fontFamily: "'Sarabun',sans-serif" }}>{t.label}</span>
+          </button>
+        ))}
+
+        {/* Center raised FAB */}
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", paddingBottom: 14 }}>
+          <button onClick={() => setModal("add_tx")}
+            style={{ background: T.accent, color: "#000", border: "none", borderRadius: "50%", width: 52, height: 52, cursor: "pointer", boxShadow: `0 4px 20px ${T.accentDim}`, display: "flex", alignItems: "center", justifyContent: "center", marginTop: -24 }}>
+            <PlusCircle size={26} />
+          </button>
+        </div>
+
+        {TABS.slice(2).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{ flex: 1, padding: "12px 4px 16px", border: "none", background: "transparent", color: tab === t.id ? T.accent : T.muted, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "color .2s" }}>
             <t.icon size={20} />
@@ -109,12 +135,6 @@ export default function App() {
         ))}
       </div>
 
-      {/* FAB */}
-      <button onClick={() => setModal("add_tx")}
-        style={{ position: "fixed", bottom: 72, right: "calc(50% - 215px + 16px)", background: T.accent, color: "#000", border: "none", borderRadius: "50%", width: 52, height: 52, cursor: "pointer", boxShadow: `0 4px 20px ${T.accentDim}`, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99 }}>
-        <PlusCircle size={26} />
-      </button>
-
       {/* Modals */}
       {modal === "add_tx"       && <AddTransactionModal onClose={() => setModal(null)} onSave={addTransaction} />}
       {modal === "scan"         && <ScanModal           onClose={() => setModal(null)} onSave={addTransaction} model={model} />}
@@ -122,6 +142,7 @@ export default function App() {
       {modal === "ai_plan"      && <AIPlanModal         onClose={() => setModal(null)} data={data} model={model} />}
       {modal === "budget"       && <BudgetModal         onClose={() => setModal(null)} data={data} onSave={updateBudget} />}
       {modal === "model"        && <ModelSelector       selected={model} onSelect={setModel} onClose={() => setModal(null)} />}
+      {modal === "apikey"       && <ApiKeyModal         onClose={() => setModal(null)} />}
     </div>
     </>
   );

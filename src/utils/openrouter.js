@@ -1,11 +1,13 @@
-const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+function getApiKey() {
+  return localStorage.getItem("finapp_apikey") || import.meta.env.VITE_OPENROUTER_API_KEY || "";
+}
 
 export async function callOpenRouter(messages, model, maxTokens = 1000) {
   const res = await fetch("/api/openrouter/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${API_KEY}`,
+      "Authorization": `Bearer ${getApiKey()}`,
       "HTTP-Referer": "http://localhost:5173",
       "X-Title": "FINFLOW",
     },
