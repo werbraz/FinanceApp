@@ -3,12 +3,12 @@ function getApiKey() {
 }
 
 export async function callOpenRouter(messages, model, maxTokens = 1000) {
-  const res = await fetch("/api/openrouter/v1/chat/completions", {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${getApiKey()}`,
-      "HTTP-Referer": "http://localhost:5173",
+      "HTTP-Referer": "https://github.com/werbraz/FinanceApp",
       "X-Title": "FINFLOW",
     },
     body: JSON.stringify({ model, max_tokens: maxTokens, messages }),
