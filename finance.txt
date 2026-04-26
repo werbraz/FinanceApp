@@ -1,0 +1,909 @@
+import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  PlusCircle, Camera, TrendingDown, TrendingUp, Wallet, X, Upload,
+  Sparkles, ShoppingCart, Home, Car, Coffee, Heart, Utensils,
+  Smartphone, Trash2, Edit3, CheckCircle, AlertCircle, ChevronDown,
+  ChevronUp, DollarSign, Clock, Star, BarChart2, Target, ArrowLeftRight,
+  Search, Bell, Settings, ChevronRight, Zap, Gift, BookOpen, Music,
+  Plane, Package, Image, ExternalLink
+} from "lucide-react";
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, LineChart, Line, CartesianGrid
+} from "recharts";
+
+// ─── THEME ────────────────────────────────────────────────────────────────────
+const T = {
+  bg: "#0f0f14",
+  card: "#17171f",
+  card2: "#1e1e28",
+  border: "#2a2a38",
+  accent: "#f0c040",
+  accentDim: "#f0c04022",
+  green: "#34d399",
+  red: "#f87171",
+  blue: "#60a5fa",
+  purple: "#a78bfa",
+  text: "#f0ede8",
+  muted: "#6b6880",
+  muted2: "#9896a8",
+};
+
+const CAT = [
+  { id: "food", label: "อาหาร", icon: Utensils, color: "#f59e0b" },
+  { id: "travel", label: "เดินทาง", icon: Car, color: "#60a5fa" },
+  { id: "home", label: "ที่พัก/บ้าน", icon: Home, color: "#34d399" },
+  { id: "shop", label: "ช้อปปิ้ง", icon: ShoppingCart, color: "#f472b6" },
+  { id: "health", label: "สุขภาพ", icon: Heart, color: "#f87171" },
+  { id: "entertain", label: "บันเทิง", icon: Music, color: "#a78bfa" },
+  { id: "phone", label: "โทรศัพท์/net", icon: Smartphone, color: "#38bdf8" },
+  { id: "travel2", label: "ท่องเที่ยว", icon: Plane, color: "#fb923c" },
+  { id: "gift", label: "ของขวัญ", icon: Gift, color: "#e879f9" },
+  { id: "education", label: "การศึกษา", icon: BookOpen, color: "#4ade80" },
+  { id: "other", label: "อื่นๆ", icon: Package, color: "#94a3b8" },
+];
+
+const PLATFORMS = ["Shopee", "TikTok Shop", "Facebook", "Lazada", "อื่นๆ"];
+const PIE_COLORS = CAT.map(c => c.color);
+
+function formatB(n) {
+  return "฿" + Number(n).toLocaleString("th-TH", { minimumFractionDigits: 0 });
+}
+function today() {
+  return new Date().toISOString().split("T")[0];
+}
+function thDate(d) {
+  return new Date(d).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+}
+
+const INIT = {
+  transactions: [
+    { id: 1, type: "expense", amount: 120, category: "food", note: "ข้าวกลางวัน", date: today(), source: "manual" },
+    { id: 2, type: "expense", amount: 350, category: "travel", note: "น้ำมัน", date: today(), source: "manual" },
+    { id: 3, type: "income", amount: 25000, category: "other", note: "เงินเดือน", date: today(), source: "manual" },
+    { id: 4, type: "expense", amount: 599, category: "shop", note: "เสื้อผ้า", date: today(), source: "manual" },
+    { id: 5, type: "expense", amount: 85, category: "entertain", note: "Netflix", date: today(), source: "manual" },
+  ],
+  budgetPlan: { income: 25000, ratios: { need: 50, want: 30, save: 20 } },
+  wishlist: [
+    {
+      id: 1, name: "หูฟัง Sony WH-1000XM5", targetPrice: 8000,
+      offers: [
+        { platform: "Shopee", price: 8990, shipping: 30, shop: "SonyThailand", rating: "4.9", capturedAt: today() },
+        { platform: "TikTok Shop", price: 8500, shipping: 0, shop: "SonyTH", rating: "4.7", capturedAt: today() },
+      ]
+    },
+  ],
+  recurring: [
+    { id: 1, label: "Netflix", amount: 299, dueDay: 5, category: "entertain" },
+    { id: 2, label: "ค่าไฟ", amount: 800, dueDay: 15, category: "home" },
+  ],
+};
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+export default function App() {
+  const [tab, setTab] = useState("dashboard");
+  const [data, setData] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("finapp_data")) || INIT; }
+    catch { return INIT; }
+  });
+  const [modal, setModal] = useState(null); // null | "add_tx" | "scan" | "wishlist_add" | "ai_plan" | "budget"
+
+  useEffect(() => {
+    localStorage.setItem("finapp_data", JSON.stringify(data));
+  }, [data]);
+
+  const addTransaction = (tx) => {
+    setData(d => ({ ...d, transactions: [{ ...tx, id: Date.now() }, ...d.transactions] }));
+  };
+  const deleteTransaction = (id) => {
+    setData(d => ({ ...d, transactions: d.transactions.filter(t => t.id !== id) }));
+  };
+  const addWishlistItem = (item) => {
+    setData(d => ({ ...d, wishlist: [{ ...item, id: Date.now(), offers: [] }, ...d.wishlist] }));
+  };
+  const addOfferToWishlist = (wishId, offer) => {
+    setData(d => ({
+      ...d,
+      wishlist: d.wishlist.map(w =>
+        w.id === wishId ? { ...w, offers: [...w.offers, { ...offer, capturedAt: today() }] } : w
+      )
+    }));
+  };
+  const deleteWishlistItem = (id) => {
+    setData(d => ({ ...d, wishlist: d.wishlist.filter(w => w.id !== id) }));
+  };
+  const updateBudget = (plan) => {
+    setData(d => ({ ...d, budgetPlan: plan }));
+  };
+
+  const tabs = [
+    { id: "dashboard", label: "หน้าหลัก", icon: BarChart2 },
+    { id: "transactions", label: "รายการ", icon: DollarSign },
+    { id: "budget", label: "แผนงบ", icon: Target },
+    { id: "wishlist", label: "Wishlist", icon: Star },
+  ];
+
+  return (
+    <div style={{ fontFamily: "'Sarabun', sans-serif", background: T.bg, minHeight: "100vh", color: T.text, maxWidth: 430, margin: "0 auto", position: "relative", paddingBottom: 80 }}>
+      <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet" />
+
+      {/* Header */}
+      <div style={{ padding: "20px 20px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 20, fontWeight: 700, color: T.accent, letterSpacing: 1 }}>FINFLOW</div>
+          <div style={{ fontSize: 12, color: T.muted, marginTop: 1 }}>บัญชีรายรับ-รายจ่าย</div>
+        </div>
+        <button onClick={() => setModal("scan")}
+          style={{ background: T.accent, color: "#000", border: "none", borderRadius: 12, padding: "8px 14px", fontFamily: "'Sarabun',sans-serif", fontWeight: 600, fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+          <Camera size={15} /> สแกนบิล
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div style={{ padding: "0 0 16px" }}>
+        {tab === "dashboard" && <DashboardTab data={data} onAdd={() => setModal("add_tx")} onAI={() => setModal("ai_plan")} />}
+        {tab === "transactions" && <TransactionsTab data={data} onDelete={deleteTransaction} onAdd={() => setModal("add_tx")} />}
+        {tab === "budget" && <BudgetTab data={data} onEdit={() => setModal("budget")} />}
+        {tab === "wishlist" && <WishlistTab data={data} onAdd={() => setModal("wishlist_add")} onDelete={deleteWishlistItem} onAddOffer={addOfferToWishlist} />}
+      </div>
+
+      {/* Bottom Nav */}
+      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: T.card, borderTop: `1px solid ${T.border}`, display: "flex", zIndex: 100 }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ flex: 1, padding: "12px 4px 16px", border: "none", background: "transparent", color: tab === t.id ? T.accent : T.muted, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "color .2s" }}>
+            <t.icon size={20} />
+            <span style={{ fontSize: 10, fontFamily: "'Sarabun',sans-serif" }}>{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* FAB Add */}
+      <button onClick={() => setModal("add_tx")}
+        style={{ position: "fixed", bottom: 72, right: "calc(50% - 215px + 16px)", background: T.accent, color: "#000", border: "none", borderRadius: "50%", width: 52, height: 52, fontSize: 28, cursor: "pointer", boxShadow: `0 4px 20px ${T.accentDim}`, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99 }}>
+        <PlusCircle size={26} />
+      </button>
+
+      {/* Modals */}
+      {modal === "add_tx" && <AddTransactionModal onClose={() => setModal(null)} onSave={addTransaction} />}
+      {modal === "scan" && <ScanModal onClose={() => setModal(null)} onSave={addTransaction} />}
+      {modal === "wishlist_add" && <AddWishlistModal onClose={() => setModal(null)} onSave={addWishlistItem} />}
+      {modal === "ai_plan" && <AIPlanModal onClose={() => setModal(null)} data={data} />}
+      {modal === "budget" && <BudgetModal onClose={() => setModal(null)} data={data} onSave={updateBudget} />}
+    </div>
+  );
+}
+
+// ─── DASHBOARD TAB ────────────────────────────────────────────────────────────
+function DashboardTab({ data, onAdd, onAI }) {
+  const { transactions, budgetPlan } = data;
+  const thisMonth = new Date().toISOString().slice(0, 7);
+
+  const monthTx = transactions.filter(t => t.date.startsWith(thisMonth));
+  const income = monthTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const expense = monthTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const balance = income - expense;
+
+  const catData = CAT.map(c => ({
+    name: c.label, value: monthTx.filter(t => t.type === "expense" && t.category === c.id).reduce((s, t) => s + t.amount, 0), color: c.color
+  })).filter(c => c.value > 0);
+
+  const todayTx = transactions.filter(t => t.date === today());
+  const todayExp = todayTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+
+  return (
+    <div style={{ padding: "20px 16px 0" }}>
+      {/* Balance Card */}
+      <div style={{ background: `linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)`, border: `1px solid ${T.border}`, borderRadius: 20, padding: 20, marginBottom: 16, position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: T.accentDim }} />
+        <div style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>ยอดคงเหลือเดือนนี้</div>
+        <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 32, fontWeight: 700, color: balance >= 0 ? T.green : T.red }}>
+          {formatB(balance)}
+        </div>
+        <div style={{ display: "flex", gap: 20, marginTop: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, color: T.muted }}>รายรับ</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.green }}>+{formatB(income)}</div>
+          </div>
+          <div style={{ width: 1, background: T.border }} />
+          <div>
+            <div style={{ fontSize: 11, color: T.muted }}>รายจ่าย</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.red }}>-{formatB(expense)}</div>
+          </div>
+          <div style={{ width: 1, background: T.border }} />
+          <div>
+            <div style={{ fontSize: 11, color: T.muted }}>วันนี้</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.accent }}>-{formatB(todayExp)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Plan Button */}
+      <button onClick={onAI} style={{ width: "100%", background: `linear-gradient(90deg, #f0c04015, #a78bfa15)`, border: `1px solid #a78bfa44`, borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 16, textAlign: "left" }}>
+        <div style={{ background: "#a78bfa22", borderRadius: 10, padding: 8 }}><Sparkles size={18} color="#a78bfa" /></div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>AI วิเคราะห์รายจ่าย</div>
+          <div style={{ fontSize: 12, color: T.muted }}>วางแผนลดรายจ่ายเดือนถัดไป</div>
+        </div>
+        <ChevronRight size={16} color={T.muted} style={{ marginLeft: "auto" }} />
+      </button>
+
+      {/* Pie Chart */}
+      {catData.length > 0 && (
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 20, padding: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>รายจ่ายแยกหมวด</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <ResponsiveContainer width={130} height={130}>
+              <PieChart>
+                <Pie data={catData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2} dataKey="value">
+                  {catData.map((c, i) => <Cell key={i} fill={c.color} />)}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              {catData.slice(0, 5).map((c, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
+                  <div style={{ fontSize: 12, color: T.muted2, flex: 1 }}>{c.name}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{formatB(c.value)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recent transactions */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 20, padding: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
+          <span>รายการล่าสุด</span>
+          <span style={{ fontSize: 12, color: T.accent, cursor: "pointer" }}>ดูทั้งหมด</span>
+        </div>
+        {transactions.slice(0, 5).map(tx => <TxRow key={tx.id} tx={tx} />)}
+      </div>
+    </div>
+  );
+}
+
+function TxRow({ tx, onDelete }) {
+  const cat = CAT.find(c => c.id === tx.category) || CAT[CAT.length - 1];
+  const Icon = cat.icon;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: cat.color + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon size={16} color={cat.color} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.note || cat.label}</div>
+        <div style={{ fontSize: 11, color: T.muted }}>{thDate(tx.date)} · {cat.label}</div>
+      </div>
+      <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 14, fontWeight: 600, color: tx.type === "income" ? T.green : T.red }}>
+        {tx.type === "income" ? "+" : "-"}{formatB(tx.amount)}
+      </div>
+      {onDelete && (
+        <button onClick={() => onDelete(tx.id)} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", padding: 4 }}>
+          <Trash2 size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── TRANSACTIONS TAB ─────────────────────────────────────────────────────────
+function TransactionsTab({ data, onDelete, onAdd }) {
+  const [filter, setFilter] = useState("all");
+  const { transactions } = data;
+  const filtered = filter === "all" ? transactions : transactions.filter(t => t.type === filter);
+
+  return (
+    <div style={{ padding: "20px 16px 0" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {["all", "expense", "income"].map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            style={{ flex: 1, padding: "8px 4px", border: `1px solid ${filter === f ? T.accent : T.border}`, borderRadius: 10, background: filter === f ? T.accentDim : "transparent", color: filter === f ? T.accent : T.muted, fontSize: 12, cursor: "pointer", fontFamily: "'Sarabun',sans-serif" }}>
+            {f === "all" ? "ทั้งหมด" : f === "expense" ? "รายจ่าย" : "รายรับ"}
+          </button>
+        ))}
+      </div>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 20, padding: "4px 16px" }}>
+        {filtered.length === 0
+          ? <div style={{ padding: 32, textAlign: "center", color: T.muted, fontSize: 14 }}>ไม่มีรายการ</div>
+          : filtered.map(tx => <TxRow key={tx.id} tx={tx} onDelete={onDelete} />)
+        }
+      </div>
+    </div>
+  );
+}
+
+// ─── BUDGET TAB ───────────────────────────────────────────────────────────────
+function BudgetTab({ data, onEdit }) {
+  const { budgetPlan, transactions } = data;
+  const { income, ratios } = budgetPlan;
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const monthExp = transactions.filter(t => t.date.startsWith(thisMonth) && t.type === "expense").reduce((s, t) => s + t.amount, 0);
+
+  const buckets = [
+    { key: "need", label: "จำเป็น", desc: "ค่าเช่า อาหาร ค่าไฟ", color: T.blue },
+    { key: "want", label: "อยากได้", desc: "ช้อปปิ้ง บันเทิง", color: T.purple },
+    { key: "save", label: "ออมทรัพย์", desc: "เก็บไว้/ลงทุน", color: T.green },
+  ];
+
+  return (
+    <div style={{ padding: "20px 16px 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 16, fontWeight: 600 }}>แผนงบประมาณ</div>
+        <button onClick={onEdit} style={{ background: T.accentDim, border: `1px solid ${T.accent}44`, borderRadius: 8, padding: "6px 12px", color: T.accent, fontSize: 12, cursor: "pointer", fontFamily: "'Sarabun',sans-serif" }}>
+          <Edit3 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />แก้ไข
+        </button>
+      </div>
+
+      {/* Income card */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 16, marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: T.muted }}>รายรับเดือนนี้</div>
+        <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 28, fontWeight: 700, color: T.green }}>{formatB(income)}</div>
+        <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>ใช้ไปแล้ว {formatB(monthExp)} · เหลือ {formatB(income - monthExp)}</div>
+        <div style={{ marginTop: 8, background: T.border, borderRadius: 8, height: 6, overflow: "hidden" }}>
+          <div style={{ width: `${Math.min((monthExp / income) * 100, 100)}%`, height: "100%", background: monthExp / income > 0.9 ? T.red : T.green, borderRadius: 8, transition: "width .5s" }} />
+        </div>
+      </div>
+
+      {/* Buckets */}
+      {buckets.map(b => {
+        const allocated = (income * ratios[b.key]) / 100;
+        const pct = ratios[b.key];
+        return (
+          <div key={b.key} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 16, marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: b.color }}>{b.label} <span style={{ fontSize: 12, color: T.muted }}>({pct}%)</span></div>
+                <div style={{ fontSize: 11, color: T.muted }}>{b.desc}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 16, fontWeight: 700 }}>{formatB(allocated)}</div>
+              </div>
+            </div>
+            <div style={{ background: T.border, borderRadius: 8, height: 4 }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: b.color, borderRadius: 8 }} />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Recurring */}
+      {data.recurring?.length > 0 && (
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 16, marginTop: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>รายจ่ายประจำ</div>
+          {data.recurring.map(r => {
+            const cat = CAT.find(c => c.id === r.category) || CAT[CAT.length - 1];
+            const Icon = cat.icon;
+            return (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: cat.color + "22", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon size={14} color={cat.color} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13 }}>{r.label}</div>
+                  <div style={{ fontSize: 11, color: T.muted }}>ทุกวันที่ {r.dueDay}</div>
+                </div>
+                <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 14, color: T.red }}>-{formatB(r.amount)}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── WISHLIST TAB ─────────────────────────────────────────────────────────────
+function WishlistTab({ data, onAdd, onDelete, onAddOffer }) {
+  const [scanWishId, setScanWishId] = useState(null);
+
+  return (
+    <div style={{ padding: "20px 16px 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 16, fontWeight: 600 }}>Wishlist</div>
+        <button onClick={onAdd} style={{ background: T.accentDim, border: `1px solid ${T.accent}44`, borderRadius: 8, padding: "6px 12px", color: T.accent, fontSize: 12, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", display: "flex", alignItems: "center", gap: 4 }}>
+          <PlusCircle size={13} /> เพิ่มของ
+        </button>
+      </div>
+
+      {data.wishlist.length === 0
+        ? <div style={{ textAlign: "center", color: T.muted, padding: 40, fontSize: 14 }}>ยังไม่มีสินค้าใน Wishlist</div>
+        : data.wishlist.map(w => (
+          <WishlistCard key={w.id} item={w} onDelete={onDelete} onScanOffer={() => setScanWishId(w.id)} />
+        ))
+      }
+
+      {scanWishId && (
+        <ScanOfferModal
+          onClose={() => setScanWishId(null)}
+          onSave={(offer) => { onAddOffer(scanWishId, offer); setScanWishId(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function WishlistCard({ item, onDelete, onScanOffer }) {
+  const [open, setOpen] = useState(false);
+  const bestOffer = item.offers.length > 0
+    ? item.offers.reduce((best, o) => (o.price + (o.shipping || 0)) < (best.price + (best.shipping || 0)) ? o : best)
+    : null;
+  const platformLinks = { "Shopee": "https://shopee.co.th/search?keyword=", "TikTok Shop": "https://www.tiktok.com/search?q=", "Lazada": "https://www.lazada.co.th/catalog/?q=" };
+
+  return (
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 16, marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentDim, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Star size={18} color={T.accent} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+          <div style={{ fontSize: 12, color: T.muted }}>ราคาเป้าหมาย: <span style={{ color: T.accent }}>{formatB(item.targetPrice)}</span></div>
+          {bestOffer && (
+            <div style={{ fontSize: 12, color: T.green, marginTop: 2 }}>
+              ✓ ราคาดีสุด {formatB(bestOffer.price + (bestOffer.shipping || 0))} ({bestOffer.platform})
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={onScanOffer} style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", color: T.muted2, cursor: "pointer" }}>
+            <Camera size={14} />
+          </button>
+          <button onClick={() => setOpen(!open)} style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", color: T.muted2, cursor: "pointer" }}>
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          <button onClick={() => onDelete(item.id)} style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", color: T.red, cursor: "pointer" }}>
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      {open && item.offers.length > 0 && (
+        <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
+          <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>ราคาเปรียบเทียบ</div>
+          {item.offers.map((o, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: bestOffer === o ? "#34d39910" : T.card2, borderRadius: 10, marginBottom: 6, border: `1px solid ${bestOffer === o ? T.green + "44" : T.border}` }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{o.platform}</div>
+                <div style={{ fontSize: 11, color: T.muted }}>{o.shop} · ⭐{o.rating} · {thDate(o.capturedAt)}</div>
+                {o.shipping === 0 && <div style={{ fontSize: 10, color: T.green }}>ฟรีค่าส่ง</div>}
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 14, fontWeight: 700, color: bestOffer === o ? T.green : T.text }}>{formatB(o.price)}</div>
+                {o.shipping > 0 && <div style={{ fontSize: 11, color: T.muted }}>+ส่ง {formatB(o.shipping)}</div>}
+              </div>
+              {platformLinks[o.platform] && (
+                <a href={platformLinks[o.platform] + encodeURIComponent(item.name)} target="_blank" rel="noreferrer"
+                  style={{ color: T.blue, padding: 4 }}>
+                  <ExternalLink size={13} />
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MODALS ───────────────────────────────────────────────────────────────────
+function ModalWrapper({ title, onClose, children }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#000000bb", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: T.card, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 430, maxHeight: "92vh", overflow: "auto", padding: "0 0 40px" }}>
+        <div style={{ position: "sticky", top: 0, background: T.card, padding: "16px 20px 12px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>{title}</div>
+          <button onClick={onClose} style={{ background: T.card2, border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
+        </div>
+        <div style={{ padding: "16px 20px 0" }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function AddTransactionModal({ onClose, onSave }) {
+  const [form, setForm] = useState({ type: "expense", amount: "", category: "food", note: "", date: today() });
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const save = () => {
+    if (!form.amount) return;
+    onSave({ ...form, amount: parseFloat(form.amount), source: "manual" });
+    onClose();
+  };
+
+  return (
+    <ModalWrapper title="เพิ่มรายการ" onClose={onClose}>
+      {/* Type Toggle */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {["expense", "income"].map(t => (
+          <button key={t} onClick={() => set("type", t)}
+            style={{ flex: 1, padding: 10, border: `1px solid ${form.type === t ? (t === "income" ? T.green : T.red) : T.border}`, borderRadius: 12, background: form.type === t ? (t === "income" ? T.green + "22" : T.red + "22") : "transparent", color: form.type === t ? (t === "income" ? T.green : T.red) : T.muted, cursor: "pointer", fontSize: 13, fontFamily: "'Sarabun',sans-serif", fontWeight: 600 }}>
+            {t === "expense" ? "💸 รายจ่าย" : "💰 รายรับ"}
+          </button>
+        ))}
+      </div>
+
+      {/* Amount */}
+      <label style={{ fontSize: 12, color: T.muted, display: "block", marginBottom: 6 }}>จำนวนเงิน (บาท)</label>
+      <input type="number" value={form.amount} onChange={e => set("amount", e.target.value)} placeholder="0.00"
+        style={{ width: "100%", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", color: T.text, fontSize: 24, fontFamily: "'Chakra Petch',sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
+
+      {/* Note */}
+      <label style={{ fontSize: 12, color: T.muted, display: "block", marginBottom: 6 }}>บันทึกย่อ</label>
+      <input type="text" value={form.note} onChange={e => set("note", e.target.value)} placeholder="ระบุรายละเอียด..."
+        style={{ width: "100%", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", color: T.text, fontSize: 14, fontFamily: "'Sarabun',sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
+
+      {/* Category */}
+      {form.type === "expense" && (
+        <>
+          <label style={{ fontSize: 12, color: T.muted, display: "block", marginBottom: 8 }}>หมวดหมู่</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            {CAT.map(c => {
+              const Icon = c.icon;
+              return (
+                <button key={c.id} onClick={() => set("category", c.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", border: `1px solid ${form.category === c.id ? c.color : T.border}`, borderRadius: 20, background: form.category === c.id ? c.color + "22" : "transparent", color: form.category === c.id ? c.color : T.muted, cursor: "pointer", fontSize: 12, fontFamily: "'Sarabun',sans-serif" }}>
+                  <Icon size={12} />{c.label}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Date */}
+      <label style={{ fontSize: 12, color: T.muted, display: "block", marginBottom: 6 }}>วันที่</label>
+      <input type="date" value={form.date} onChange={e => set("date", e.target.value)}
+        style={{ width: "100%", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", color: T.text, fontSize: 14, fontFamily: "'Sarabun',sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 20 }} />
+
+      <button onClick={save} style={{ width: "100%", background: T.accent, border: "none", borderRadius: 14, padding: 14, color: "#000", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "'Sarabun',sans-serif" }}>
+        บันทึกรายการ
+      </button>
+    </ModalWrapper>
+  );
+}
+
+function ScanModal({ onClose, onSave }) {
+  const [step, setStep] = useState("upload"); // upload | scanning | preview
+  const [preview, setPreview] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const fileRef = useRef();
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(",")[1];
+      const mimeType = file.type;
+      setPreview(e.target.result);
+      setStep("scanning");
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1000,
+            messages: [{
+              role: "user",
+              content: [
+                { type: "image", source: { type: "base64", media_type: mimeType, data: base64 } },
+                { type: "text", text: `วิเคราะห์รูปนี้ว่าเป็นสลิปโอนเงินหรือใบเสร็จ แล้วแตกข้อมูลออกมาเป็น JSON เท่านั้น ไม่ต้องอธิบายเพิ่มเติม รูปแบบ:
+{"type":"expense","amount":0,"note":"","category":"food","items":[{"name":"","price":0}]}
+- type: "expense" เสมอสำหรับใบเสร็จ/สลิปจ่ายเงิน
+- amount: ยอดรวมทั้งหมด (ตัวเลขเท่านั้น)
+- note: ชื่อร้าน หรือผู้รับโอน
+- category: food/travel/home/shop/health/entertain/phone/other
+- items: รายการสินค้า (ถ้ามี) ถ้าไม่มีให้ส่ง []
+ถ้าอ่านไม่ได้ให้ส่ง {"error":"อ่านไม่ได้"}`
+                }
+              ]
+            }]
+          })
+        });
+        const data = await res.json();
+        const text = data.content?.[0]?.text || "";
+        const clean = text.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+        if (parsed.error) { setError("อ่านภาพไม่ได้ กรุณาลองใหม่"); setStep("upload"); }
+        else { setResult({ ...parsed, date: today() }); setStep("preview"); }
+      } catch (e) {
+        setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        setStep("upload");
+      }
+      setLoading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const confirm = () => {
+    if (result) { onSave({ ...result, source: "scan" }); onClose(); }
+  };
+
+  return (
+    <ModalWrapper title="สแกนสลิป / บิล" onClose={onClose}>
+      {step === "upload" && (
+        <div>
+          {error && <div style={{ background: T.red + "22", border: `1px solid ${T.red}44`, borderRadius: 10, padding: "10px 14px", color: T.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
+          <div onClick={() => fileRef.current?.click()}
+            style={{ border: `2px dashed ${T.border}`, borderRadius: 16, padding: 40, textAlign: "center", cursor: "pointer", background: T.card2 }}>
+            <Camera size={40} color={T.muted} style={{ margin: "0 auto 12px" }} />
+            <div style={{ fontSize: 14, color: T.muted2, marginBottom: 6 }}>แตะเพื่อถ่ายรูป / เลือกรูป</div>
+            <div style={{ fontSize: 12, color: T.muted }}>สลิปโอนเงิน หรือใบเสร็จ</div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+        </div>
+      )}
+
+      {step === "scanning" && (
+        <div style={{ textAlign: "center", padding: 40 }}>
+          {preview && <img src={preview} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, marginBottom: 20 }} />}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: T.accentDim, border: `1px solid ${T.accent}44`, borderRadius: 12, padding: "12px 20px" }}>
+            <Sparkles size={18} color={T.accent} />
+            <span style={{ fontSize: 14, color: T.accent }}>AI กำลังอ่านบิล...</span>
+          </div>
+        </div>
+      )}
+
+      {step === "preview" && result && (
+        <div>
+          {preview && <img src={preview} alt="" style={{ width: "100%", maxHeight: 160, objectFit: "contain", borderRadius: 12, marginBottom: 16 }} />}
+          <div style={{ background: T.card2, border: `1px solid ${T.green}44`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+              <CheckCircle size={16} color={T.green} />
+              <span style={{ fontSize: 13, color: T.green }}>AI อ่านสำเร็จ — โปรดตรวจสอบ</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, color: T.muted }}>ยอดเงิน</span>
+              <span style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 18, fontWeight: 700, color: T.red }}>-{formatB(result.amount)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, color: T.muted }}>บันทึก</span>
+              <span style={{ fontSize: 13 }}>{result.note}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 13, color: T.muted }}>หมวด</span>
+              <span style={{ fontSize: 13 }}>{CAT.find(c => c.id === result.category)?.label || result.category}</span>
+            </div>
+            {result.items?.length > 0 && (
+              <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
+                <div style={{ fontSize: 12, color: T.muted, marginBottom: 6 }}>รายการสินค้า</div>
+                {result.items.map((it, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0" }}>
+                    <span>{it.name}</span><span>{formatB(it.price)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setStep("upload")} style={{ flex: 1, background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, color: T.muted, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", fontSize: 13 }}>สแกนใหม่</button>
+            <button onClick={confirm} style={{ flex: 2, background: T.accent, border: "none", borderRadius: 12, padding: 12, color: "#000", fontWeight: 700, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", fontSize: 14 }}>ยืนยันบันทึก</button>
+          </div>
+        </div>
+      )}
+    </ModalWrapper>
+  );
+}
+
+function ScanOfferModal({ onClose, onSave }) {
+  const [step, setStep] = useState("upload");
+  const [preview, setPreview] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const fileRef = useRef();
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(",")[1];
+      setPreview(e.target.result);
+      setStep("scanning");
+      setLoading(true);
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 600,
+            messages: [{
+              role: "user",
+              content: [
+                { type: "image", source: { type: "base64", media_type: file.type, data: base64 } },
+                { type: "text", text: `อ่านภาพแคปหน้าจอร้านค้าออนไลน์นี้ แล้วส่ง JSON เท่านั้น:
+{"platform":"Shopee","price":0,"shipping":0,"shop":"","rating":""}
+- platform: Shopee / TikTok Shop / Lazada / Facebook / อื่นๆ
+- price: ราคาสินค้า (ตัวเลข)
+- shipping: ค่าส่ง (0 ถ้าฟรี)
+- shop: ชื่อร้าน
+- rating: คะแนนร้าน
+ถ้าอ่านไม่ได้ส่ง {"error":"อ่านไม่ได้"}`
+                }
+              ]
+            }]
+          })
+        });
+        const data = await res.json();
+        const text = data.content?.[0]?.text || "";
+        const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+        if (parsed.error) { setStep("upload"); }
+        else { setResult(parsed); setStep("preview"); }
+      } catch { setStep("upload"); }
+      setLoading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <ModalWrapper title="แคปจอราคาสินค้า" onClose={onClose}>
+      {step === "upload" && (
+        <div>
+          <div style={{ fontSize: 13, color: T.muted, marginBottom: 16 }}>แคปจอหน้าสินค้าจาก Shopee / TikTok / Facebook แล้วอัปโหลด AI จะอ่านราคาให้อัตโนมัติ</div>
+          <div onClick={() => fileRef.current?.click()}
+            style={{ border: `2px dashed ${T.border}`, borderRadius: 16, padding: 40, textAlign: "center", cursor: "pointer", background: T.card2 }}>
+            <Image size={36} color={T.muted} style={{ margin: "0 auto 12px" }} />
+            <div style={{ fontSize: 14, color: T.muted2 }}>เลือกภาพแคปจอ</div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+        </div>
+      )}
+      {step === "scanning" && (
+        <div style={{ textAlign: "center", padding: 40 }}>
+          {preview && <img src={preview} alt="" style={{ width: "100%", maxHeight: 180, objectFit: "contain", borderRadius: 12, marginBottom: 16 }} />}
+          <div style={{ color: T.accent, fontSize: 14 }}>
+            <Sparkles size={18} style={{ verticalAlign: "middle", marginRight: 6 }} />AI กำลังอ่านราคา...
+          </div>
+        </div>
+      )}
+      {step === "preview" && result && (
+        <div>
+          {preview && <img src={preview} alt="" style={{ width: "100%", maxHeight: 160, objectFit: "contain", borderRadius: 12, marginBottom: 16 }} />}
+          <div style={{ background: T.card2, border: `1px solid ${T.green}44`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {[["Platform", result.platform], ["ร้าน", result.shop], ["ราคา", formatB(result.price)], ["ค่าส่ง", result.shipping === 0 ? "ฟรี" : formatB(result.shipping)], ["Rating", result.rating ? `⭐${result.rating}` : "-"]].map(([k, v]) => (
+                <div key={k}>
+                  <div style={{ fontSize: 11, color: T.muted }}>{k}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setStep("upload")} style={{ flex: 1, background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, color: T.muted, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", fontSize: 13 }}>ใหม่</button>
+            <button onClick={() => onSave(result)} style={{ flex: 2, background: T.accent, border: "none", borderRadius: 12, padding: 12, color: "#000", fontWeight: 700, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", fontSize: 14 }}>บันทึกราคา</button>
+          </div>
+        </div>
+      )}
+    </ModalWrapper>
+  );
+}
+
+function AddWishlistModal({ onClose, onSave }) {
+  const [name, setName] = useState("");
+  const [target, setTarget] = useState("");
+  return (
+    <ModalWrapper title="เพิ่มสิ่งที่อยากได้" onClose={onClose}>
+      <label style={{ fontSize: 12, color: T.muted, display: "block", marginBottom: 6 }}>ชื่อสินค้า</label>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="เช่น หูฟัง Sony..."
+        style={{ width: "100%", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", color: T.text, fontSize: 14, fontFamily: "'Sarabun',sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
+      <label style={{ fontSize: 12, color: T.muted, display: "block", marginBottom: 6 }}>ราคาเป้าหมาย (บาท)</label>
+      <input type="number" value={target} onChange={e => setTarget(e.target.value)} placeholder="0"
+        style={{ width: "100%", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", color: T.text, fontSize: 14, fontFamily: "'Chakra Petch',sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 20 }} />
+      <button onClick={() => { if (name && target) { onSave({ name, targetPrice: parseFloat(target) }); onClose(); } }}
+        style={{ width: "100%", background: T.accent, border: "none", borderRadius: 14, padding: 14, color: "#000", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "'Sarabun',sans-serif" }}>
+        เพิ่ม Wishlist
+      </button>
+    </ModalWrapper>
+  );
+}
+
+function BudgetModal({ onClose, data, onSave }) {
+  const [income, setIncome] = useState(data.budgetPlan.income);
+  const [ratios, setRatios] = useState(data.budgetPlan.ratios);
+  const total = ratios.need + ratios.want + ratios.save;
+
+  return (
+    <ModalWrapper title="ตั้งค่าแผนงบ" onClose={onClose}>
+      <label style={{ fontSize: 12, color: T.muted, display: "block", marginBottom: 6 }}>รายรับต่อเดือน (บาท)</label>
+      <input type="number" value={income} onChange={e => setIncome(parseFloat(e.target.value) || 0)}
+        style={{ width: "100%", background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", color: T.text, fontSize: 20, fontFamily: "'Chakra Petch',sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 20 }} />
+
+      {[["need", "จำเป็น", T.blue], ["want", "อยากได้", T.purple], ["save", "ออมทรัพย์", T.green]].map(([k, label, color]) => (
+        <div key={k} style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontSize: 13, color }}>{label}</span>
+            <span style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 14, color }}>{ratios[k]}% = {formatB((income * ratios[k]) / 100)}</span>
+          </div>
+          <input type="range" min={0} max={100} value={ratios[k]} onChange={e => setRatios(r => ({ ...r, [k]: parseInt(e.target.value) }))}
+            style={{ width: "100%", accentColor: color }} />
+        </div>
+      ))}
+
+      {total !== 100 && (
+        <div style={{ background: T.red + "22", border: `1px solid ${T.red}44`, borderRadius: 10, padding: "10px 14px", color: T.red, fontSize: 13, marginBottom: 16 }}>
+          รวม {total}% — ต้องรวมได้ 100% พอดี (ขาด/เกิน {Math.abs(100 - total)}%)
+        </div>
+      )}
+
+      <button onClick={() => { if (total === 100) { onSave({ income, ratios }); onClose(); } }}
+        disabled={total !== 100}
+        style={{ width: "100%", background: total === 100 ? T.accent : T.border, border: "none", borderRadius: 14, padding: 14, color: total === 100 ? "#000" : T.muted, fontWeight: 700, fontSize: 15, cursor: total === 100 ? "pointer" : "not-allowed", fontFamily: "'Sarabun',sans-serif" }}>
+        บันทึกแผน
+      </button>
+    </ModalWrapper>
+  );
+}
+
+function AIPlanModal({ onClose, data }) {
+  const [analysis, setAnalysis] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const analyze = async () => {
+      const { transactions, budgetPlan } = data;
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      const monthTx = transactions.filter(t => t.date.startsWith(thisMonth));
+      const income = monthTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+      const expense = monthTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+      const byCategory = CAT.map(c => ({
+        cat: c.label, amount: monthTx.filter(t => t.type === "expense" && t.category === c.id).reduce((s, t) => s + t.amount, 0)
+      })).filter(c => c.amount > 0);
+
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1000,
+            messages: [{
+              role: "user",
+              content: `วิเคราะห์การใช้เงินเดือนนี้และให้คำแนะนำเป็นภาษาไทย กระชับ จริงจัง:
+
+รายรับ: ${income} บาท
+รายจ่ายรวม: ${expense} บาท
+แผนงบ: จำเป็น ${budgetPlan.ratios.need}% / อยากได้ ${budgetPlan.ratios.want}% / ออม ${budgetPlan.ratios.save}%
+รายจ่ายแยกหมวด: ${byCategory.map(c => `${c.cat}: ${c.amount}`).join(", ")}
+
+ให้:
+1. สรุปสถานะการเงิน (1-2 ประโยค)
+2. หมวดที่ใช้เกินแผน (ถ้ามี)
+3. 3 วิธีลดรายจ่ายเดือนหน้าที่ทำได้จริง
+4. แนะนำสัดส่วนงบเดือนหน้า`
+            }]
+          })
+        });
+        const d = await res.json();
+        setAnalysis(d.content?.[0]?.text || "ไม่สามารถวิเคราะห์ได้");
+      } catch { setAnalysis("เกิดข้อผิดพลาด กรุณาลองใหม่"); }
+      setLoading(false);
+    };
+    analyze();
+  }, []);
+
+  return (
+    <ModalWrapper title="AI วิเคราะห์การใช้จ่าย" onClose={onClose}>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, color: T.accent, fontSize: 14 }}>
+            <Sparkles size={20} />กำลังวิเคราะห์...
+          </div>
+        </div>
+      ) : (
+        <div style={{ background: T.card2, border: `1px solid ${T.purple}33`, borderRadius: 16, padding: 16, lineHeight: 1.8, fontSize: 14, color: T.text, whiteSpace: "pre-wrap" }}>
+          {analysis}
+        </div>
+      )}
+    </ModalWrapper>
+  );
+}

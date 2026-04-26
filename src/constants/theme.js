@@ -1,0 +1,15 @@
+export const T = {
+  bg: "transparent",
+  card: "rgba(20, 20, 30, 0.72)",
+  card2: "rgba(28, 28, 40, 0.80)",
+  border: "rgba(255,255,255,0.10)",
+  accent: "#f0c040",
+  accentDim: "#f0c04022",
+  green: "#34d399",
+  red: "#f87171",
+  blue: "#60a5fa",
+  purple: "#a78bfa",
+  text: "#f0ede8",
+  muted: "#6b6880",
+  muted2: "#9896a8",
+};
