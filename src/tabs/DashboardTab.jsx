@@ -30,23 +30,23 @@ export default function DashboardTab({ data, onAdd, onAI }) {
       <div style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)", border: `1px solid ${T.border}`, borderRadius: 20, padding: 20, marginBottom: 16, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: T.accentDim }} />
         <div style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>ยอดคงเหลือเดือนนี้</div>
-        <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 32, fontWeight: 700, color: balance >= 0 ? T.green : T.red }}>
+        <div style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: "clamp(22px, 8vw, 32px)", fontWeight: 700, color: balance >= 0 ? T.green : T.red, wordBreak: "break-all" }}>
           {formatB(balance)}
         </div>
-        <div style={{ display: "flex", gap: 20, marginTop: 16 }}>
-          <div>
-            <div style={{ fontSize: 11, color: T.muted }}>รายรับ</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: T.green }}>+{formatB(income)}</div>
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: T.muted }}>รายรับ</div>
+            <div style={{ fontSize: "clamp(12px, 4vw, 15px)", fontWeight: 600, color: T.green, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>+{formatB(income)}</div>
           </div>
-          <div style={{ width: 1, background: T.border }} />
-          <div>
-            <div style={{ fontSize: 11, color: T.muted }}>รายจ่าย</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: T.red }}>-{formatB(expense)}</div>
+          <div style={{ width: 1, background: T.border, flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: T.muted }}>รายจ่าย</div>
+            <div style={{ fontSize: "clamp(12px, 4vw, 15px)", fontWeight: 600, color: T.red, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>-{formatB(expense)}</div>
           </div>
-          <div style={{ width: 1, background: T.border }} />
-          <div>
-            <div style={{ fontSize: 11, color: T.muted }}>วันนี้</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: T.accent }}>-{formatB(todayExp)}</div>
+          <div style={{ width: 1, background: T.border, flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: T.muted }}>วันนี้</div>
+            <div style={{ fontSize: "clamp(12px, 4vw, 15px)", fontWeight: 600, color: T.accent, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>-{formatB(todayExp)}</div>
           </div>
         </div>
       </div>
@@ -67,20 +67,22 @@ export default function DashboardTab({ data, onAdd, onAI }) {
       {catData.length > 0 && (
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 20, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>รายจ่ายแยกหมวด</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <ResponsiveContainer width={130} height={130}>
-              <PieChart>
-                <Pie data={catData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2} dataKey="value">
-                  {catData.map((c, i) => <Cell key={i} fill={c.color} />)}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <div style={{ flexShrink: 0, width: 120, height: 120 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={catData} cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={2} dataKey="value">
+                    {catData.map((c, i) => <Cell key={i} fill={c.color} />)}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 5 }}>
               {catData.slice(0, 5).map((c, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
-                  <div style={{ fontSize: 12, color: T.muted2, flex: 1 }}>{c.name}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>{formatB(c.value)}</div>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
+                  <div style={{ fontSize: 11, color: T.muted2, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{formatB(c.value)}</div>
                 </div>
               ))}
             </div>

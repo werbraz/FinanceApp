@@ -66,38 +66,41 @@ export default function App() {
         transform: "scale(1.08)",
       }} />
 
-    <div style={{ fontFamily: "'Sarabun', sans-serif", background: "transparent", minHeight: "100vh", color: T.text, maxWidth: 430, margin: "0 auto", position: "relative", paddingBottom: 80 }}>
+    <div style={{ fontFamily: "'Sarabun', sans-serif", background: "transparent", minHeight: "100vh", color: T.text, maxWidth: 430, margin: "0 auto", position: "relative", paddingBottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
 
       {/* Header */}
-      <div style={{ padding: "16px 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, backdropFilter: "blur(12px)", background: "rgba(10,10,18,0.5)", borderBottom: `1px solid ${T.border}`, position: "sticky", top: 0, zIndex: 50 }}>
-        <div>
-          <div style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 20, fontWeight: 700, color: T.accent, letterSpacing: 1 }}>FINFLOW</div>
-          <div style={{ fontSize: 11, color: T.muted, marginTop: 1 }}>บัญชีรายรับ-รายจ่าย</div>
+      <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, backdropFilter: "blur(12px)", background: "rgba(10,10,18,0.5)", borderBottom: `1px solid ${T.border}`, position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 18, fontWeight: 700, color: T.accent, letterSpacing: 1 }}>FINFLOW</div>
+          <div style={{ fontSize: 10, color: T.muted }}>บัญชีรายรับ-รายจ่าย</div>
         </div>
 
-        {/* API Key Button */}
-        <button
-          onClick={() => setModal("apikey")}
-          style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 10, padding: "7px 8px", cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-          title="ตั้งค่า API Key"
-        >
-          <KeyRound size={15} color={localStorage.getItem("finapp_apikey") ? T.accent : T.muted} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {/* API Key Button */}
+          <button
+            onClick={() => setModal("apikey")}
+            style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 7px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            title="ตั้งค่า API Key"
+          >
+            <KeyRound size={14} color={localStorage.getItem("finapp_apikey") ? T.accent : T.muted} />
+          </button>
 
-        {/* Model Picker Pill */}
-        <button
-          onClick={() => setModal("model")}
-          style={{ display: "flex", alignItems: "center", gap: 5, background: T.card2, border: `1px solid ${currentModel.providerColor}44`, borderRadius: 20, padding: "5px 10px 5px 8px", cursor: "pointer", flexShrink: 0 }}
-        >
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: currentModel.providerColor, display: "inline-block", flexShrink: 0 }} />
-          <span style={{ fontSize: 11, color: T.muted2, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentModel.name}</span>
-          <ChevronDown size={11} color={T.muted} />
-        </button>
+          {/* Model Picker Pill */}
+          <button
+            onClick={() => setModal("model")}
+            style={{ display: "flex", alignItems: "center", gap: 4, background: T.card2, border: `1px solid ${currentModel.providerColor}44`, borderRadius: 20, padding: "5px 8px 5px 7px", cursor: "pointer" }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: currentModel.providerColor, display: "inline-block", flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: T.muted2, maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentModel.name}</span>
+            <ChevronDown size={10} color={T.muted} />
+          </button>
 
-        <button onClick={() => setModal("scan")}
-          style={{ background: T.accent, color: "#000", border: "none", borderRadius: 12, padding: "8px 14px", fontFamily: "'Sarabun',sans-serif", fontWeight: 600, fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", flexShrink: 0 }}>
-          <Camera size={15} /> สแกนบิล
-        </button>
+          {/* Scan Button */}
+          <button onClick={() => setModal("scan")}
+            style={{ background: T.accent, color: "#000", border: "none", borderRadius: 10, padding: "7px 12px", fontFamily: "'Sarabun',sans-serif", fontWeight: 600, fontSize: 12, display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+            <Camera size={14} /> สแกน
+          </button>
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -109,27 +112,27 @@ export default function App() {
       </div>
 
       {/* Bottom Nav with center FAB */}
-      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(10,10,18,0.75)", backdropFilter: "blur(16px)", borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(10,10,18,0.85)", backdropFilter: "blur(16px)", borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "flex-end", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         {TABS.slice(0, 2).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ flex: 1, padding: "12px 4px 16px", border: "none", background: "transparent", color: tab === t.id ? T.accent : T.muted, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "color .2s" }}>
-            <t.icon size={20} />
+            style={{ flex: 1, padding: "10px 4px 12px", border: "none", background: "transparent", color: tab === t.id ? T.accent : T.muted, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, transition: "color .2s" }}>
+            <t.icon size={19} />
             <span style={{ fontSize: 10, fontFamily: "'Sarabun',sans-serif" }}>{t.label}</span>
           </button>
         ))}
 
         {/* Center raised FAB */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "center", paddingBottom: 14 }}>
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", paddingBottom: 10 }}>
           <button onClick={() => setModal("add_tx")}
-            style={{ background: T.accent, color: "#000", border: "none", borderRadius: "50%", width: 52, height: 52, cursor: "pointer", boxShadow: `0 4px 20px ${T.accentDim}`, display: "flex", alignItems: "center", justifyContent: "center", marginTop: -24 }}>
-            <PlusCircle size={26} />
+            style={{ background: T.accent, color: "#000", border: "none", borderRadius: "50%", width: 50, height: 50, cursor: "pointer", boxShadow: `0 4px 20px ${T.accentDim}`, display: "flex", alignItems: "center", justifyContent: "center", marginTop: -20 }}>
+            <PlusCircle size={24} />
           </button>
         </div>
 
         {TABS.slice(2).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ flex: 1, padding: "12px 4px 16px", border: "none", background: "transparent", color: tab === t.id ? T.accent : T.muted, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "color .2s" }}>
-            <t.icon size={20} />
+            style={{ flex: 1, padding: "10px 4px 12px", border: "none", background: "transparent", color: tab === t.id ? T.accent : T.muted, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, transition: "color .2s" }}>
+            <t.icon size={19} />
             <span style={{ fontSize: 10, fontFamily: "'Sarabun',sans-serif" }}>{t.label}</span>
           </button>
         ))}
