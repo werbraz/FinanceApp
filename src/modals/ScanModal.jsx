@@ -1,26 +1,40 @@
 import { useState, useRef } from "react";
-import { Camera, Sparkles, CheckCircle } from "lucide-react";
+import { Camera, Sparkles, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { CAT } from "../constants/categories";
 import { T } from "../constants/theme";
 import { today, formatB } from "../utils/format";
 import { callOpenRouter, toImageMsg } from "../utils/openrouter";
 import ModalWrapper from "../components/ModalWrapper";
 
-const SCAN_PROMPT = `วิเคราะห์รูปนี้ว่าเป็นสลิปโอนเงินหรือใบเสร็จ แล้วแตกข้อมูลออกมาเป็น JSON เท่านั้น ไม่ต้องอธิบายเพิ่มเติม รูปแบบ:
+function buildPrompt(ownerName) {
+  const nameRule = ownerName
+    ? `ชื่อเจ้าของแอปคือ "${ownerName}"
+- ถ้าเป็นสลิปโอนเงิน และ "${ownerName}" อยู่ในช่อง "ถึง/ผู้รับ" → type = "income"
+- ถ้าเป็นสลิปโอนเงิน และ "${ownerName}" อยู่ในช่อง "จาก/ผู้โอน" → type = "expense"
+- ถ้าเป็นใบเสร็จ/บิลซื้อของ → type = "expense"
+- ถ้าไม่แน่ใจ → type = "expense"`
+    : `- type: "income" ถ้าเป็นเงินรับเข้า, "expense" ถ้าเป็นเงินออก/ใบเสร็จ/บิล`;
+
+  return `วิเคราะห์รูปนี้ว่าเป็นสลิปโอนเงินหรือใบเสร็จ แล้วแตกข้อมูลออกมาเป็น JSON เท่านั้น ไม่ต้องอธิบายเพิ่มเติม รูปแบบ:
 {"type":"expense","amount":0,"note":"","category":"food","items":[{"name":"","price":0}]}
-- type: "expense" เสมอสำหรับใบเสร็จ/สลิปจ่ายเงิน
-- amount: ยอดรวมทั้งหมด (ตัวเลขเท่านั้น)
-- note: ชื่อร้าน หรือผู้รับโอน
+${nameRule}
+- amount: ยอดรวมทั้งหมด (ตัวเลขเท่านั้น ไม่ติดลบ)
+- note: ชื่อร้าน หรือชื่อผู้โอน/ผู้รับ
 - category: food/travel/home/shop/health/entertain/phone/other
 - items: รายการสินค้า (ถ้ามี) ถ้าไม่มีให้ส่ง []
 ถ้าอ่านไม่ได้ให้ส่ง {"error":"อ่านไม่ได้"}`;
+}
 
-export default function ScanModal({ onClose, onSave, model }) {
-  const [step, setStep] = useState("upload");
+export default function ScanModal({ onClose, onSave, model, ownerName = "" }) {
+  const [step, setStep]       = useState("upload");
   const [preview, setPreview] = useState(null);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
-  const fileRef = useRef();
+  const [result, setResult]   = useState(null);
+  const [userType, setUserType] = useState(null); // "income" | "expense" | null (null = use AI result)
+  const [error, setError]     = useState("");
+  const fileRef               = useRef();
+
+  const effectiveType = userType ?? result?.type ?? "expense";
+  const isIncome      = effectiveType === "income";
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -30,8 +44,10 @@ export default function ScanModal({ onClose, onSave, model }) {
       setPreview(e.target.result);
       setStep("scanning");
       setError("");
+      setUserType(null);
       try {
-        const text = await callOpenRouter([toImageMsg(base64, file.type, SCAN_PROMPT)], model, 1000);
+        const prompt = buildPrompt(ownerName);
+        const text = await callOpenRouter([toImageMsg(base64, file.type, prompt)], model, 1000);
         const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
         if (parsed.error) { setError("อ่านภาพไม่ได้ กรุณาลองใหม่"); setStep("upload"); }
         else { setResult({ ...parsed, date: today() }); setStep("preview"); }
@@ -44,8 +60,13 @@ export default function ScanModal({ onClose, onSave, model }) {
   };
 
   const confirm = () => {
-    if (result) { onSave({ ...result, source: "scan" }); onClose(); }
+    if (result) {
+      onSave({ ...result, type: effectiveType, source: "scan" });
+      onClose();
+    }
   };
+
+  const resetUpload = () => { setStep("upload"); setUserType(null); };
 
   return (
     <ModalWrapper title="สแกนสลิป / บิล" onClose={onClose}>
@@ -53,6 +74,11 @@ export default function ScanModal({ onClose, onSave, model }) {
         <div>
           {error && (
             <div style={{ background: T.red + "22", border: `1px solid ${T.red}44`, borderRadius: 10, padding: "10px 14px", color: T.red, fontSize: 13, marginBottom: 16 }}>{error}</div>
+          )}
+          {!ownerName && (
+            <div style={{ background: T.accent + "15", border: `1px solid ${T.accent}44`, borderRadius: 10, padding: "10px 14px", color: T.accent, fontSize: 12, marginBottom: 16, lineHeight: 1.6 }}>
+              ตั้งชื่อเจ้าของบัญชีในหน้าตั้งค่า เพื่อให้ AI แยกรายรับ-รายจ่ายได้แม่นยำขึ้น
+            </div>
           )}
           <div onClick={() => fileRef.current?.click()}
             style={{ border: `2px dashed ${T.border}`, borderRadius: 16, padding: 40, textAlign: "center", cursor: "pointer", background: T.card2 }}>
@@ -77,15 +103,38 @@ export default function ScanModal({ onClose, onSave, model }) {
 
       {step === "preview" && result && (
         <div>
-          {preview && <img src={preview} alt="" style={{ width: "100%", maxHeight: 160, objectFit: "contain", borderRadius: 12, marginBottom: 16 }} />}
-          <div style={{ background: T.card2, border: `1px solid ${T.green}44`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+          {preview && <img src={preview} alt="" style={{ width: "100%", maxHeight: 140, objectFit: "contain", borderRadius: 12, marginBottom: 14 }} />}
+
+          {/* Income / Expense toggle */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <button
+              onClick={() => setUserType("income")}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 12, border: `2px solid ${isIncome ? T.green : T.border}`, background: isIncome ? T.green + "22" : T.card2, color: isIncome ? T.green : T.muted, fontWeight: isIncome ? 700 : 400, fontFamily: "'Sarabun',sans-serif", fontSize: 14, cursor: "pointer", transition: "all .15s" }}
+            >
+              <TrendingUp size={15} /> รายรับ
+            </button>
+            <button
+              onClick={() => setUserType("expense")}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 12, border: `2px solid ${!isIncome ? T.red : T.border}`, background: !isIncome ? T.red + "22" : T.card2, color: !isIncome ? T.red : T.muted, fontWeight: !isIncome ? 700 : 400, fontFamily: "'Sarabun',sans-serif", fontSize: 14, cursor: "pointer", transition: "all .15s" }}
+            >
+              <TrendingDown size={15} /> รายจ่าย
+            </button>
+          </div>
+
+          {/* Result card */}
+          <div style={{ background: T.card2, border: `1px solid ${isIncome ? T.green + "44" : T.red + "44"}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
               <CheckCircle size={16} color={T.green} />
               <span style={{ fontSize: 13, color: T.green }}>AI อ่านสำเร็จ — โปรดตรวจสอบ</span>
+              {userType && (
+                <span style={{ marginLeft: "auto", fontSize: 11, color: T.muted }}>แก้ไขเอง</span>
+              )}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 13, color: T.muted }}>ยอดเงิน</span>
-              <span style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 18, fontWeight: 700, color: T.red }}>-{formatB(result.amount)}</span>
+              <span style={{ fontFamily: "'Chakra Petch',sans-serif", fontSize: 18, fontWeight: 700, color: isIncome ? T.green : T.red }}>
+                {isIncome ? "+" : "-"}{formatB(result.amount)}
+              </span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 13, color: T.muted }}>บันทึก</span>
@@ -106,8 +155,9 @@ export default function ScanModal({ onClose, onSave, model }) {
               </div>
             )}
           </div>
+
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setStep("upload")} style={{ flex: 1, background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, color: T.muted, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", fontSize: 13 }}>สแกนใหม่</button>
+            <button onClick={resetUpload} style={{ flex: 1, background: T.card2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, color: T.muted, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", fontSize: 13 }}>สแกนใหม่</button>
             <button onClick={confirm} style={{ flex: 2, background: T.accent, border: "none", borderRadius: 12, padding: 12, color: "#000", fontWeight: 700, cursor: "pointer", fontFamily: "'Sarabun',sans-serif", fontSize: 14 }}>ยืนยันบันทึก</button>
           </div>
         </div>

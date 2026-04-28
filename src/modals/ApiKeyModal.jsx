@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Eye, EyeOff, Check, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Check, Trash2, User } from "lucide-react";
 import { T } from "../constants/theme";
 import ModalWrapper from "../components/ModalWrapper";
 
 export default function ApiKeyModal({ onClose }) {
-  const [key, setKey] = useState(() => localStorage.getItem("finapp_apikey") || "");
-  const [show, setShow] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [key, setKey]           = useState(() => localStorage.getItem("finapp_apikey") || "");
+  const [ownerName, setOwnerName] = useState(() => localStorage.getItem("finapp_owner") || "");
+  const [show, setShow]         = useState(false);
+  const [saved, setSaved]       = useState(false);
 
   const handleSave = () => {
     localStorage.setItem("finapp_apikey", key.trim());
+    localStorage.setItem("finapp_owner", ownerName.trim());
     setSaved(true);
     setTimeout(onClose, 900);
   };
@@ -21,11 +23,33 @@ export default function ApiKeyModal({ onClose }) {
   };
 
   const hasExisting = !!localStorage.getItem("finapp_apikey");
+  const canSave = key.trim() || ownerName.trim();
 
   return (
-    <ModalWrapper title="OpenRouter API Key" onClose={onClose}>
+    <ModalWrapper title="ตั้งค่า" onClose={onClose}>
 
-      <div style={{ background: T.card2, borderRadius: 12, padding: "12px 14px", marginBottom: 20, fontSize: 12, color: T.muted, lineHeight: 1.8 }}>
+      {/* Owner name */}
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ fontSize: 12, color: T.muted, display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+          <User size={12} /> ชื่อเจ้าของบัญชี (ใช้ระบุทิศทางเงินในสลิป)
+        </label>
+        <input
+          type="text"
+          value={ownerName}
+          onChange={e => { setOwnerName(e.target.value); setSaved(false); }}
+          placeholder="เช่น วีรวุฒิ บำรุงสำราญ"
+          style={{ width: "100%", background: T.card2, border: `1px solid ${ownerName ? T.accent + "66" : T.border}`, borderRadius: 12, padding: "12px 16px", color: T.text, fontSize: 13, fontFamily: "'Sarabun',sans-serif", outline: "none", boxSizing: "border-box" }}
+        />
+        <div style={{ fontSize: 11, color: T.muted, marginTop: 5, lineHeight: 1.6 }}>
+          AI จะใช้ชื่อนี้ตรวจสอบว่าสลิปเป็น รายรับ หรือ รายจ่าย
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ borderTop: `1px solid ${T.border}`, marginBottom: 20 }} />
+
+      {/* API Key */}
+      <div style={{ background: T.card2, borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: T.muted, lineHeight: 1.8 }}>
         รับ API key ได้ที่{" "}
         <span style={{ color: T.accent, fontWeight: 600 }}>openrouter.ai/keys</span>
         <br />
@@ -45,7 +69,7 @@ export default function ApiKeyModal({ onClose }) {
           value={key}
           onChange={e => { setKey(e.target.value); setSaved(false); }}
           placeholder="sk-or-v1-..."
-          style={{ width: "100%", background: T.card2, border: `1px solid ${key ? T.accent + "66" : T.border}`, borderRadius: 12, padding: "12px 44px 12px 16px", color: T.text, fontSize: 13, fontFamily: "monospace", outline: "none", boxSizing: "border-box", transition: "border-color .2s" }}
+          style={{ width: "100%", background: T.card2, border: `1px solid ${key ? T.accent + "66" : T.border}`, borderRadius: 12, padding: "12px 44px 12px 16px", color: T.text, fontSize: 13, fontFamily: "monospace", outline: "none", boxSizing: "border-box" }}
         />
         <button
           onClick={() => setShow(!show)}
@@ -57,10 +81,10 @@ export default function ApiKeyModal({ onClose }) {
 
       <button
         onClick={handleSave}
-        disabled={!key.trim()}
-        style={{ width: "100%", background: saved ? T.green : (key.trim() ? T.accent : T.border), border: "none", borderRadius: 14, padding: 14, color: saved ? "#fff" : (key.trim() ? "#000" : T.muted), fontWeight: 700, fontSize: 15, cursor: key.trim() ? "pointer" : "not-allowed", fontFamily: "'Sarabun',sans-serif", transition: "background .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        disabled={!canSave}
+        style={{ width: "100%", background: saved ? T.green : (canSave ? T.accent : T.border), border: "none", borderRadius: 14, padding: 14, color: saved ? "#fff" : (canSave ? "#000" : T.muted), fontWeight: 700, fontSize: 15, cursor: canSave ? "pointer" : "not-allowed", fontFamily: "'Sarabun',sans-serif", transition: "background .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
       >
-        {saved ? <><Check size={16} /> บันทึกแล้ว</> : "บันทึก API Key"}
+        {saved ? <><Check size={16} /> บันทึกแล้ว</> : "บันทึก"}
       </button>
 
       {(key || hasExisting) && (

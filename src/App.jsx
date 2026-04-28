@@ -140,7 +140,7 @@ export default function App() {
 
       {/* Modals */}
       {modal === "add_tx"       && <AddTransactionModal onClose={() => setModal(null)} onSave={addTransaction} />}
-      {modal === "scan"         && <ScanModal           onClose={() => setModal(null)} onSave={addTransaction} model={model} />}
+      {modal === "scan"         && <ScanModal           onClose={() => setModal(null)} onSave={addTransaction} model={model} ownerName={localStorage.getItem("finapp_owner") || ""} />}
       {modal === "wishlist_add" && <AddWishlistModal    onClose={() => setModal(null)} onSave={addWishlistItem} model={model} />}
       {modal === "ai_plan"      && <AIPlanModal         onClose={() => setModal(null)} data={data} model={model} />}
       {modal === "budget"       && <BudgetModal         onClose={() => setModal(null)} data={data} onSave={updateBudget} />}
