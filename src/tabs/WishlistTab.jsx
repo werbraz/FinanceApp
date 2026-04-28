@@ -20,6 +20,7 @@ const PLATFORM_LINKS = {
 };
 
 function PlatformPill({ name }) {
+  const T = useTheme();
   const color = PLATFORM_COLORS[name] ?? T.muted;
   return (
     <span style={{ fontSize: 10, fontWeight: 600, color, background: color + "22", borderRadius: 6, padding: "2px 7px" }}>
