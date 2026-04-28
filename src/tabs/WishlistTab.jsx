@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PlusCircle, Star, Camera, ChevronDown, ChevronUp, Trash2, ExternalLink } from "lucide-react";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatB, thDate } from "../utils/format";
 import ScanOfferModal from "../modals/ScanOfferModal";
 
@@ -29,6 +29,7 @@ function PlatformPill({ name }) {
 }
 
 function WishlistCard({ item, onDelete, onScanOffer }) {
+  const T = useTheme();
   const [open, setOpen] = useState(false);
 
   const bestOffer = item.offers.length > 0
@@ -154,6 +155,7 @@ function WishlistCard({ item, onDelete, onScanOffer }) {
 }
 
 export default function WishlistTab({ data, onAdd, onDelete, onAddOffer, model }) {
+  const T = useTheme();
   const [scanWishId, setScanWishId] = useState(null);
 
   return (

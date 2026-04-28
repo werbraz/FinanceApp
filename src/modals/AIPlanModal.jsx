@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { callOpenRouter } from "../utils/openrouter";
 import ModalWrapper from "../components/ModalWrapper";
 
 export default function AIPlanModal({ onClose, data, model }) {
+  const T = useTheme();
   const [analysis, setAnalysis] = useState("");
   const [loading, setLoading] = useState(true);
 

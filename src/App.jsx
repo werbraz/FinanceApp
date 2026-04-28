@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Camera, BarChart2, DollarSign, Target, Star, ChevronDown, KeyRound } from "lucide-react";
-import { T } from "./constants/theme";
+import { PlusCircle, Camera, BarChart2, DollarSign, Target, Star, ChevronDown, KeyRound, Palette } from "lucide-react";
+import { useTheme } from "./contexts/ThemeContext";
 import { INIT } from "./constants/initialData";
 import { today } from "./utils/format";
 import { VISION_MODELS, DEFAULT_MODEL } from "./constants/models";
@@ -16,6 +16,7 @@ import BudgetModal from "./modals/BudgetModal";
 import BudgetAIModal from "./modals/BudgetAIModal";
 import ModelSelector from "./components/ModelSelector";
 import ApiKeyModal from "./modals/ApiKeyModal";
+import ThemePickerModal from "./modals/ThemePickerModal";
 
 const TABS = [
   { id: "dashboard",    label: "หน้าหลัก", icon: BarChart2 },
@@ -25,6 +26,7 @@ const TABS = [
 ];
 
 export default function App() {
+  const T = useTheme();
   const [tab, setTab] = useState("dashboard");
   const [data, setData] = useState(() => {
     try { return JSON.parse(localStorage.getItem("finapp_data")) || INIT; }
@@ -60,7 +62,7 @@ export default function App() {
       {/* Full-screen blurred background */}
       <div style={{
         position: "fixed", inset: 0, zIndex: -1,
-        backgroundImage: "url(/bg01.jpeg)",
+        backgroundImage: `url(${T.bgImage})`,
         backgroundSize: "cover",
         backgroundPosition: "center top",
         filter: "blur(18px) brightness(0.45) saturate(0.8)",
@@ -77,6 +79,15 @@ export default function App() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {/* Theme Button */}
+          <button
+            onClick={() => setModal("theme")}
+            style={{ background: T.card2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 7px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            title="เปลี่ยน Theme"
+          >
+            <Palette size={14} color={T.accent} />
+          </button>
+
           {/* API Key Button */}
           <button
             onClick={() => setModal("apikey")}
@@ -148,6 +159,7 @@ export default function App() {
       {modal === "budget_ai"   && <BudgetAIModal      onClose={() => setModal(null)} data={data} model={model} />}
       {modal === "model"        && <ModelSelector       selected={model} onSelect={setModel} onClose={() => setModal(null)} />}
       {modal === "apikey"       && <ApiKeyModal         onClose={() => setModal(null)} />}
+      {modal === "theme"        && <ThemePickerModal    onClose={() => setModal(null)} />}
     </div>
     </>
   );

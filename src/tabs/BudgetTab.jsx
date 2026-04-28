@@ -1,9 +1,10 @@
 import { Edit3, Sparkles } from "lucide-react";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatB } from "../utils/format";
 
 export default function BudgetTab({ data, onEdit, onAI }) {
+  const T = useTheme();
   const { budgetPlan, transactions, recurring } = data;
   const { income, ratios } = budgetPlan;
   const thisMonth = new Date().toISOString().slice(0, 7);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sparkles, RefreshCw, ShoppingBag, Clock } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatB } from "../utils/format";
 import { callOpenRouter } from "../utils/openrouter";
 import ModalWrapper from "../components/ModalWrapper";
@@ -78,6 +78,7 @@ ${wishLines || "  - ไม่มีรายการ"}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function BudgetDonut({ ratios, income, expense }) {
+  const T = useTheme();
   const remaining = Math.max(income - expense, 0);
   const need  = (income * ratios.need) / 100;
   const want  = (income * ratios.want) / 100;
@@ -150,6 +151,7 @@ function MonthLabel(months) {
 }
 
 function WishlistPlan({ wishItems, monthlySave }) {
+  const T = useTheme();
   if (!wishItems.length) return null;
   const maxMonths = Math.min(Math.max(...wishItems.map(w => w.months)), 24);
 
@@ -203,6 +205,7 @@ function WishlistPlan({ wishItems, monthlySave }) {
 }
 
 function BulletCards({ text, color }) {
+  const T = useTheme();
   const bullets = text.split("\n").filter(l => l.trim().startsWith("•")).map(l => l.replace("•", "").trim());
   if (!bullets.length) {
     return (
@@ -225,6 +228,7 @@ function BulletCards({ text, color }) {
 
 // ─── Main modal ───────────────────────────────────────────────────────────────
 export default function BudgetAIModal({ onClose, data, model }) {
+  const T = useTheme();
   const [role, setRole]     = useState(null);
   const [advice, setAdvice] = useState("");
   const [loading, setLoading] = useState(false);

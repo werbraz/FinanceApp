@@ -1,11 +1,12 @@
 import { Sparkles, ChevronRight } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatB, today } from "../utils/format";
 import TxRow from "../components/TxRow";
 
 export default function DashboardTab({ data, onAdd, onAI }) {
+  const T = useTheme();
   const { transactions } = data;
   const thisMonth = new Date().toISOString().slice(0, 7);
 

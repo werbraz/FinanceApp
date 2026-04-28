@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Image, Sparkles, RefreshCw } from "lucide-react";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { callOpenRouter, toImageMsg } from "../utils/openrouter";
 import ModalWrapper from "../components/ModalWrapper";
 
@@ -18,6 +18,7 @@ const SCAN_PROMPT = `ดูภาพสินค้าหรือแคปจ�
 ถ้าอ่านไม่ได้เลยส่ง {"error":"อ่านไม่ได้"}`;
 
 export default function AddWishlistModal({ onClose, onSave, model }) {
+  const T = useTheme();
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [scanning, setScanning] = useState(false);

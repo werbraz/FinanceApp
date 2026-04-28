@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function ModalWrapper({ title, onClose, children }) {
+  const T = useTheme();
   return (
     <div
       style={{ position: "fixed", inset: 0, background: "#000000bb", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}

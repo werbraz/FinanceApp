@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Camera, Sparkles, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { today, formatB } from "../utils/format";
 import { callOpenRouter, toImageMsg } from "../utils/openrouter";
 import ModalWrapper from "../components/ModalWrapper";
@@ -26,6 +26,7 @@ ${nameRule}
 }
 
 export default function ScanModal({ onClose, onSave, model, ownerName = "" }) {
+  const T = useTheme();
   const [step, setStep]       = useState("upload");
   const [preview, setPreview] = useState(null);
   const [result, setResult]   = useState(null);

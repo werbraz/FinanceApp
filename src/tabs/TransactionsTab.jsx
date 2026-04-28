@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import TxRow from "../components/TxRow";
 
 export default function TransactionsTab({ data, onDelete }) {
+  const T = useTheme();
   const [filter, setFilter] = useState("all");
   const { transactions } = data;
   const filtered = filter === "all" ? transactions : transactions.filter(t => t.type === filter);

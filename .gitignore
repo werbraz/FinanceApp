@@ -2,3 +2,7 @@ node_modules
 dist
 .env
 .env.local
+PRODUCTION_PLAN.md
+MONETIZATION_PLAN.md
+.claude/
+.serena/

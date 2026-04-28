@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatB } from "../utils/format";
 import ModalWrapper from "../components/ModalWrapper";
 
@@ -12,6 +12,7 @@ const BUCKETS = [
 ];
 
 export default function BudgetModal({ onClose, data, onSave }) {
+  const T = useTheme();
   const [income, setIncome]       = useState(data.budgetPlan.income);
   const [ratios, setRatios]       = useState({ ...data.budgetPlan.ratios });
   const [recurring, setRecurring] = useState(data.recurring ? [...data.recurring] : []);

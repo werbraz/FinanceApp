@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { today } from "../utils/format";
 import ModalWrapper from "../components/ModalWrapper";
 
 export default function AddTransactionModal({ onClose, onSave }) {
+  const T = useTheme();
   const [form, setForm] = useState({ type: "expense", amount: "", category: "food", note: "", date: today() });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 

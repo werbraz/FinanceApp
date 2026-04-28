@@ -1,9 +1,10 @@
 import { Trash2 } from "lucide-react";
 import { CAT } from "../constants/categories";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatB, thDate } from "../utils/format";
 
 export default function TxRow({ tx, onDelete }) {
+  const T = useTheme();
   const cat = CAT.find(c => c.id === tx.category) ?? CAT[CAT.length - 1];
   const Icon = cat.icon;
   return (

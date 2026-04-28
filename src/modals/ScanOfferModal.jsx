@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Image, Sparkles } from "lucide-react";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatB } from "../utils/format";
 import { callOpenRouter, toImageMsg } from "../utils/openrouter";
 import ModalWrapper from "../components/ModalWrapper";
@@ -15,6 +15,7 @@ const SCAN_PROMPT = `อ่านภาพแคปหน้าจอร้า�
 ถ้าอ่านไม่ได้ส่ง {"error":"อ่านไม่ได้"}`;
 
 export default function ScanOfferModal({ onClose, onSave, model }) {
+  const T = useTheme();
   const [step, setStep] = useState("upload");
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);

@@ -1,8 +1,9 @@
 import { X, Check, Cpu } from "lucide-react";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { VISION_MODELS } from "../constants/models";
 
 function ModelCard({ m, selected, onSelect }) {
+  const T = useTheme();
   const isSelected = selected === m.id;
   return (
     <button
@@ -36,6 +37,7 @@ function ModelCard({ m, selected, onSelect }) {
 }
 
 export default function ModelSelector({ selected, onSelect, onClose }) {
+  const T = useTheme();
   const current = VISION_MODELS.find(m => m.id === selected);
   return (
     <div

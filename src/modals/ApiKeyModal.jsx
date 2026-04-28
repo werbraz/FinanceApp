@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Eye, EyeOff, Check, Trash2, User } from "lucide-react";
-import { T } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import ModalWrapper from "../components/ModalWrapper";
 
 export default function ApiKeyModal({ onClose }) {
+  const T = useTheme();
   const [key, setKey]           = useState(() => localStorage.getItem("finapp_apikey") || "");
   const [ownerName, setOwnerName] = useState(() => localStorage.getItem("finapp_owner") || "");
   const [show, setShow]         = useState(false);
