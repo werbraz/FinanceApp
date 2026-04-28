@@ -13,6 +13,7 @@ import ScanModal from "./modals/ScanModal";
 import AddWishlistModal from "./modals/AddWishlistModal";
 import AIPlanModal from "./modals/AIPlanModal";
 import BudgetModal from "./modals/BudgetModal";
+import BudgetAIModal from "./modals/BudgetAIModal";
 import ModelSelector from "./components/ModelSelector";
 import ApiKeyModal from "./modals/ApiKeyModal";
 
@@ -43,7 +44,7 @@ export default function App() {
     return { ...d, wishlist: [{ ...rest, id: Date.now(), offers }, ...d.wishlist] };
   });
   const deleteWishlistItem = (id)    => setData(d => ({ ...d, wishlist: d.wishlist.filter(w => w.id !== id) }));
-  const updateBudget       = (plan)  => setData(d => ({ ...d, budgetPlan: plan }));
+  const updateBudget       = (plan, recurring) => setData(d => ({ ...d, budgetPlan: plan, recurring: recurring ?? d.recurring }));
   const addOfferToWishlist = (wishId, offer) =>
     setData(d => ({
       ...d,
@@ -107,7 +108,7 @@ export default function App() {
       <div style={{ padding: "0 0 16px" }}>
         {tab === "dashboard"    && <DashboardTab    data={data} onAdd={() => setModal("add_tx")} onAI={() => setModal("ai_plan")} />}
         {tab === "transactions" && <TransactionsTab data={data} onDelete={deleteTransaction} />}
-        {tab === "budget"       && <BudgetTab       data={data} onEdit={() => setModal("budget")} />}
+        {tab === "budget"       && <BudgetTab       data={data} onEdit={() => setModal("budget")} onAI={() => setModal("budget_ai")} />}
         {tab === "wishlist"     && <WishlistTab     data={data} onAdd={() => setModal("wishlist_add")} onDelete={deleteWishlistItem} onAddOffer={addOfferToWishlist} model={model} />}
       </div>
 
@@ -144,6 +145,7 @@ export default function App() {
       {modal === "wishlist_add" && <AddWishlistModal    onClose={() => setModal(null)} onSave={addWishlistItem} model={model} />}
       {modal === "ai_plan"      && <AIPlanModal         onClose={() => setModal(null)} data={data} model={model} />}
       {modal === "budget"       && <BudgetModal         onClose={() => setModal(null)} data={data} onSave={updateBudget} />}
+      {modal === "budget_ai"   && <BudgetAIModal      onClose={() => setModal(null)} data={data} model={model} />}
       {modal === "model"        && <ModelSelector       selected={model} onSelect={setModel} onClose={() => setModal(null)} />}
       {modal === "apikey"       && <ApiKeyModal         onClose={() => setModal(null)} />}
     </div>
