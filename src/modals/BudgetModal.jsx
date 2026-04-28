@@ -5,14 +5,13 @@ import { useTheme } from "../contexts/ThemeContext";
 import { formatB } from "../utils/format";
 import ModalWrapper from "../components/ModalWrapper";
 
-const BUCKETS = [
-  { key: "need", label: "จำเป็น",    desc: "ค่าเช่า อาหาร ค่าไฟ",  color: T.blue },
-  { key: "want", label: "อยากได้",   desc: "ช้อปปิ้ง บันเทิง",     color: T.purple },
-  { key: "save", label: "ออมทรัพย์", desc: "เก็บไว้/ลงทุน",        color: T.green },
-];
-
 export default function BudgetModal({ onClose, data, onSave }) {
   const T = useTheme();
+  const BUCKETS = [
+    { key: "need", label: "จำเป็น",    desc: "ค่าเช่า อาหาร ค่าไฟ",  color: T.blue },
+    { key: "want", label: "อยากได้",   desc: "ช้อปปิ้ง บันเทิง",     color: T.purple },
+    { key: "save", label: "ออมทรัพย์", desc: "เก็บไว้/ลงทุน",        color: T.green },
+  ];
   const [income, setIncome]       = useState(data.budgetPlan.income);
   const [ratios, setRatios]       = useState({ ...data.budgetPlan.ratios });
   const [recurring, setRecurring] = useState(data.recurring ? [...data.recurring] : []);
