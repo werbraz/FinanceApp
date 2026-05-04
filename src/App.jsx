@@ -17,6 +17,7 @@ import BudgetAIModal from "./modals/BudgetAIModal";
 import ModelSelector from "./components/ModelSelector";
 import ApiKeyModal from "./modals/ApiKeyModal";
 import ThemePickerModal from "./modals/ThemePickerModal";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const TABS = [
   { id: "dashboard",    label: "หน้าหลัก", icon: BarChart2 },
@@ -37,6 +38,27 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem("finapp_data", JSON.stringify(data)); }, [data]);
   useEffect(() => { localStorage.setItem("finapp_model", model); }, [model]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const imported = params.get("import");
+    if (!imported) return;
+    try {
+      const txs = JSON.parse(atob(imported));
+      if (!Array.isArray(txs) || !txs.length) return;
+      setData(d => ({
+        ...d,
+        transactions: [
+          ...txs.map((tx, i) => ({ ...tx, id: Date.now() + i })),
+          ...d.transactions,
+        ],
+      }));
+      window.history.replaceState({}, "", window.location.pathname);
+      alert(`✅ นำเข้า ${txs.length} รายการจาก FairCart แล้ว`);
+    } catch {
+      alert("❌ ไม่สามารถนำเข้าข้อมูลได้");
+    }
+  }, []);
 
   const addTransaction     = (tx)    => setData(d => ({ ...d, transactions: [{ ...tx, id: Date.now() }, ...d.transactions] }));
   const deleteTransaction  = (id)    => setData(d => ({ ...d, transactions: d.transactions.filter(t => t.id !== id) }));
@@ -150,16 +172,18 @@ export default function App() {
         ))}
       </div>
 
-      {/* Modals */}
-      {modal === "add_tx"       && <AddTransactionModal onClose={() => setModal(null)} onSave={addTransaction} />}
-      {modal === "scan"         && <ScanModal           onClose={() => setModal(null)} onSave={addTransaction} model={model} ownerName={localStorage.getItem("finapp_owner") || ""} />}
-      {modal === "wishlist_add" && <AddWishlistModal    onClose={() => setModal(null)} onSave={addWishlistItem} model={model} />}
-      {modal === "ai_plan"      && <AIPlanModal         onClose={() => setModal(null)} data={data} model={model} />}
-      {modal === "budget"       && <BudgetModal         onClose={() => setModal(null)} data={data} onSave={updateBudget} />}
-      {modal === "budget_ai"   && <BudgetAIModal      onClose={() => setModal(null)} data={data} model={model} />}
-      {modal === "model"        && <ModelSelector       selected={model} onSelect={setModel} onClose={() => setModal(null)} />}
-      {modal === "apikey"       && <ApiKeyModal         onClose={() => setModal(null)} />}
-      {modal === "theme"        && <ThemePickerModal    onClose={() => setModal(null)} />}
+      {/* Modals — wrapped in ErrorBoundary to prevent black screen on crash */}
+      <ErrorBoundary T={T} onReset={() => setModal(null)}>
+        {modal === "add_tx"       && <AddTransactionModal onClose={() => setModal(null)} onSave={addTransaction} />}
+        {modal === "scan"         && <ScanModal           onClose={() => setModal(null)} onSave={addTransaction} model={model} ownerName={localStorage.getItem("finapp_owner") || ""} />}
+        {modal === "wishlist_add" && <AddWishlistModal    onClose={() => setModal(null)} onSave={addWishlistItem} model={model} />}
+        {modal === "ai_plan"      && <AIPlanModal         onClose={() => setModal(null)} data={data} model={model} />}
+        {modal === "budget"       && <BudgetModal         onClose={() => setModal(null)} data={data} onSave={updateBudget} />}
+        {modal === "budget_ai"    && <BudgetAIModal       onClose={() => setModal(null)} data={data} model={model} />}
+        {modal === "model"        && <ModelSelector       selected={model} onSelect={setModel} onClose={() => setModal(null)} />}
+        {modal === "apikey"       && <ApiKeyModal         onClose={() => setModal(null)} />}
+        {modal === "theme"        && <ThemePickerModal    onClose={() => setModal(null)} />}
+      </ErrorBoundary>
     </div>
     </>
   );
